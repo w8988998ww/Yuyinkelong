@@ -71,7 +71,14 @@ def run(rank, n_gpus, hps):
 
   train_dataset = TextAudioLoader(hps.data.training_files, hps.data)
   collate_fn = TextAudioCollate()
-  if hps.data_loader.use_train_sampler:
+
+  use_train_sampler = True 
+  if 'data_loader' in hps:
+    if 'use_train_sampler' in hps.data_loader:
+      if not hps.data_loader.use_train_sampler:
+        use_train_sampler = False
+
+  if use_train_sampler:
     train_sampler = DistributedBucketSampler(
         train_dataset,
         hps.train.batch_size,
@@ -140,7 +147,13 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
   if writers is not None:
     writer, writer_eval = writers
 
-  if hps.data_loader.use_train_sampler:
+  use_train_sampler = True 
+  if 'data_loader' in hps:
+    if 'use_train_sampler' in hps.data_loader:
+      if not hps.data_loader.use_train_sampler:
+        use_train_sampler = False
+        
+  if use_train_sampler:
     train_loader.batch_sampler.set_epoch(epoch)
   global global_step
 
