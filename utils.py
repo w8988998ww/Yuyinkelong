@@ -170,6 +170,7 @@ def get_hparams(init=True):
   
   hparams = HParams(**config)
   hparams.model_dir = model_dir
+  hparams.model_name = args.model
   return hparams
 
 

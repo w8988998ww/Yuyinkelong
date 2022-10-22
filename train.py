@@ -31,8 +31,9 @@ from losses import (
   kl_loss
 )
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
-from text.symbols import symbols
+from text import create_symbols_manager
 
+import time
 
 torch.backends.cudnn.benchmark = True
 global_step = 0
@@ -47,6 +48,7 @@ def main():
   os.environ['MASTER_PORT'] = '8000'
 
   hps = utils.get_hparams()
+  hps.symbols_manager = create_symbols_manager(hps.data.language)
   mp.spawn(run, nprocs=n_gpus, args=(n_gpus, hps,))
 
 
@@ -69,7 +71,7 @@ def run(rank, n_gpus, hps):
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
 
-  train_dataset = TextAudioLoader(hps.data.training_files, hps.data)
+  train_dataset = TextAudioLoader(hps.data.training_files, hps.data, hps.symbols_manager)
   collate_fn = TextAudioCollate()
   if hps.data_loader.use_train_sampler:
     train_sampler = DistributedBucketSampler(
@@ -86,13 +88,13 @@ def run(rank, n_gpus, hps):
         batch_size=hps.train.batch_size, pin_memory=True, 
         drop_last=False, collate_fn=collate_fn)
   if rank == 0:
-    eval_dataset = TextAudioLoader(hps.data.validation_files, hps.data)
+    eval_dataset = TextAudioLoader(hps.data.validation_files, hps.data, hps.symbols_manager)
     eval_loader = DataLoader(eval_dataset, num_workers=hps.data_loader.num_workers, shuffle=False,
         batch_size=hps.train.batch_size, pin_memory=True,
         drop_last=False, collate_fn=collate_fn)
 
   net_g = SynthesizerTrn(
-      len(symbols),
+      len(hps.symbols_manager.symbols),
       hps.data.filter_length // 2 + 1,
       hps.train.segment_size // hps.data.hop_length,
       **hps.model).cuda(rank)
@@ -124,10 +126,12 @@ def run(rank, n_gpus, hps):
   scaler = GradScaler(enabled=hps.train.fp16_run)
 
   for epoch in range(epoch_str, hps.train.epochs + 1):
+    start = time.perf_counter()
     if rank==0:
       train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
     else:
       train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, None], None, None)
+    print(f"This epoch takes {time.perf_counter() - start} seconds")
     scheduler_g.step()
     scheduler_d.step()
 
@@ -234,8 +238,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
       if global_step % hps.train.eval_interval == 0:
         evaluate(hps, net_g, eval_loader, writer_eval)
-        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
-        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
+        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_{}_{}.pth".format(hps.model_name, global_step)))
+        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_{}_{}.pth".format(hps.model_name, global_step)))
     global_step += 1
   
   if rank == 0:
