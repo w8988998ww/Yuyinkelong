@@ -59,24 +59,10 @@ def do_inference(generator, hparams, symbol_to_id, text, device):
     return audio
 
 # https://docs.scipy.org/doc/scipy/reference/generated/scipy.io.wavfile.write.html
-def save_to_wav(audio, path, hparams):
+def save_to_wav(audio, sampling_rate, path):
     max = 32767
     audio_int16 = np.floor(((max + 1) * audio)).astype(np.int16)
-    write(path, hparams.data.sampling_rate, audio_int16)
-
-# hps = utils.get_hparams_from_file("./configs/bb_laptop.json")
-# symbols_manager = create_symbols_manager(hps.data.language)
-
-# network_g = create_network(hps, symbols_manager._symbol_to_id)
-# load_checkpoint(network_g, "./models/G_bb_19000.pth")
-
-# text = "我是御坂妹妹！"
-# # text = "12345！"
-# # text = "The examination and testimony of the experts enabled the Commission to conclude that five shots may have been fired，"
-
-# start = time.perf_counter()
-# audio = inference(network_g, hps, symbols_manager._symbol_to_id, text)
-# print(f"The inference takes {time.perf_counter() - start} seconds")
+    write(path, sampling_rate, audio_int16)
 
 if __name__ == "__main__":
     # https://stackoverflow.com/questions/53331247/pytorch-0-4-0-there-are-three-ways-to-create-tensors-on-cuda-device-is-there-s/53332659#53332659
@@ -113,6 +99,6 @@ if __name__ == "__main__":
     filename = 'output.wav'
     file_path = os.path.join(output_dir, filename)
 
-    save_to_wav(audio, file_path, hps)
+    save_to_wav(audio, hps.data.sampling_rate, file_path)
 
 
