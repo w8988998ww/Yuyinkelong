@@ -11,13 +11,21 @@ from scipy.io.wavfile import write
 
 import time
 
-# https://stackoverflow.com/questions/53331247/pytorch-0-4-0-there-are-three-ways-to-create-tensors-on-cuda-device-is-there-s/53332659#53332659
-# https://community.esri.com/t5/arcgis-image-analyst-questions/how-force-pytorch-to-use-cpu-instead-of-gpu/td-p/1046738
+class AudioGenerator():
+    def __init__(self, hparams, device):
+        self.hparams = hparams
+        self._device = device
 
-# torch.cuda.is_available = lambda : False
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# device = torch.device('cuda')
-device = torch.device('cpu')
+        symbols_manager = create_symbols_manager(hparams.data.language)
+        self.symbol_to_id = symbols_manager._symbol_to_id
+
+        self.net_g = create_network(hparams, self.symbol_to_id, device)
+
+    def load(self, path):
+        load_checkpoint(self.net_g, path)
+
+    def inference(self, text):
+        return do_inference(self.net_g, self.hparams, self.symbol_to_id, text, self._device)
 
 def get_text(text, hparams, symbol_to_id):
     text_norm = text_to_sequence(text, hparams.data.text_cleaners, symbol_to_id)
@@ -26,7 +34,7 @@ def get_text(text, hparams, symbol_to_id):
     text_norm = torch.LongTensor(text_norm)
     return text_norm
 
-def create_network(hparams, symbols):
+def create_network(hparams, symbols, device):
     net_g = SynthesizerTrn(
         len(symbols),
         hparams.data.filter_length // 2 + 1,
@@ -40,13 +48,13 @@ def load_checkpoint(network, path):
     _ = utils.load_checkpoint(path, network, None)
 
 # Assume the network has loaded weights and are ready to do inference
-def inference(net_with_weights, hparams, symbol_to_id, text):
+def do_inference(generator, hparams, symbol_to_id, text, device):
     stn_tst = get_text(text, hparams, symbol_to_id)
 
     with torch.no_grad():
         x_tst = stn_tst.to(device).unsqueeze(0)
         x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).to(device)
-        audio = network_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][0,0].data.cpu().float().numpy()
+        audio = generator.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][0,0].data.cpu().float().numpy()
     
     return audio
 
@@ -56,30 +64,55 @@ def save_to_wav(audio, path, hparams):
     audio_int16 = np.floor(((max + 1) * audio)).astype(np.int16)
     write(path, hparams.data.sampling_rate, audio_int16)
 
-hps = utils.get_hparams_from_file("./configs/bb_laptop.json")
-symbols_manager = create_symbols_manager(hps.data.language)
+# hps = utils.get_hparams_from_file("./configs/bb_laptop.json")
+# symbols_manager = create_symbols_manager(hps.data.language)
 
-network_g = create_network(hps, symbols_manager._symbol_to_id)
-load_checkpoint(network_g, "./models/G_bb_19000.pth")
+# network_g = create_network(hps, symbols_manager._symbol_to_id)
+# load_checkpoint(network_g, "./models/G_bb_19000.pth")
 
-text = "我是御坂妹妹！"
-# text = "12345！"
-# text = "The examination and testimony of the experts enabled the Commission to conclude that five shots may have been fired，"
+# text = "我是御坂妹妹！"
+# # text = "12345！"
+# # text = "The examination and testimony of the experts enabled the Commission to conclude that five shots may have been fired，"
 
-start = time.perf_counter()
-audio = inference(network_g, hps, symbols_manager._symbol_to_id, text)
-print(f"The inference takes {time.perf_counter() - start} seconds")
+# start = time.perf_counter()
+# audio = inference(network_g, hps, symbols_manager._symbol_to_id, text)
+# print(f"The inference takes {time.perf_counter() - start} seconds")
 
-print(audio.dtype)
+if __name__ == "__main__":
+    # https://stackoverflow.com/questions/53331247/pytorch-0-4-0-there-are-three-ways-to-create-tensors-on-cuda-device-is-there-s/53332659#53332659
+    # https://community.esri.com/t5/arcgis-image-analyst-questions/how-force-pytorch-to-use-cpu-instead-of-gpu/td-p/1046738
+    # torch.cuda.is_available = lambda : False
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # device = torch.device('cuda')
 
-output_dir = './output/'
-# python program to check if a path exists
-# if it doesn’t exist we create one
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
-filename = 'output.wav'
-file_path = os.path.join(output_dir, filename)
+    device = torch.device('cpu')
+    # device = torch.device('cuda')
 
-save_to_wav(audio, file_path, hps)
+    config_path = "./configs/bb_laptop.json"
+    hps = utils.get_hparams_from_file(config_path)
+
+    audio_generator = AudioGenerator(hps, device)
+
+    checkpoint_path = "./models/G_bb_19000.pth"
+    audio_generator.load(checkpoint_path)
+
+    text = "我是御坂妹妹！"
+    # text = "12345！"
+    # text = "The examination and testimony of the experts enabled the Commission to conclude that five shots may have been fired，"
+    start = time.perf_counter()
+    audio = audio_generator.inference(text)
+    print(f"The inference takes {time.perf_counter() - start} seconds")
+
+    print(audio.dtype)
+
+    output_dir = './output/'
+    # python program to check if a path exists
+    # if it doesn’t exist we create one
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    filename = 'output.wav'
+    file_path = os.path.join(output_dir, filename)
+
+    save_to_wav(audio, file_path, hps)
 
 
