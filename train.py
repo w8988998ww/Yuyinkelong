@@ -240,6 +240,12 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         evaluate(hps, net_g, eval_loader, writer_eval)
         utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_{}_{}.pth".format(hps.model_name, global_step)))
         utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_{}_{}.pth".format(hps.model_name, global_step)))
+        checkpoint_num = utils.number_of_checkpoints(hps.model_dir, "G_*.pth")
+        # Only keep a number of latest checkpoints to save disc space
+        checkpoint_num_to_keep = 4
+        if checkpoint_num > checkpoint_num_to_keep:
+          os.remove(utils.oldest_checkpoint_path(hps.model_dir, "G_*.pth"))
+          os.remove(utils.oldest_checkpoint_path(hps.model_dir, "D_*.pth"))
     global_step += 1
   
   if rank == 0:

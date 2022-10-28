@@ -75,6 +75,19 @@ def latest_checkpoint_path(dir_path, regex="G_*.pth"):
   return x
 
 
+def oldest_checkpoint_path(dir_path, regex="G_*.pth"):
+  f_list = glob.glob(os.path.join(dir_path, regex))
+  f_list.sort(key=lambda f: int("".join(filter(str.isdigit, f))))
+  x = f_list[0]
+  print(x)
+  return x
+
+
+def number_of_checkpoints(dir_path, regex="G_*.pth"):
+  f_list = glob.glob(os.path.join(dir_path, regex))
+  return len(f_list)
+
+
 def plot_spectrogram_to_numpy(spectrogram):
   global MATPLOTLIB_FLAG
   if not MATPLOTLIB_FLAG:
