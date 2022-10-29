@@ -56,3 +56,47 @@ python train_ms.py -c configs/vctk_base.json -m vctk_base
 
 ## Inference Example
 See [inference.ipynb](inference.ipynb)
+
+<br>
+
+## 补充说明
+### 关于在Windows平台使用eSpeak
+- 在Windows用英文做训练或推断的话，需要安装[eSpeak Ng](https://github.com/espeak-ng/espeak-ng)库。[这里](https://github.com/espeak-ng/espeak-ng/releases)是下载页面，推荐使用.msi安装。
+- 安装eSpeak Ng后，请添加环境变量PHONEMIZER_ESPEAK_LIBRARY，并将变量值设置为{INSTALLDIR}\libespeak-ng.dll。如图所示：<br>
+<img src="resources/PHONEMIZER_ESPEAK_LIBRARY.png">
+
+
+### 训练与推断
+- 本项目添加了一个简易的面向对象风格的[推断脚本](inference.py)。
+- [这里](https://colab.research.google.com/drive/1uFUnZDbHMqKWBUQDZKih56Vkj2ixTN9B#scrollTo=p16LO6nXVDzP)是一个简单的Colab notebook，展示了如何使用该项目进行训练和推断的步骤。
+
+
+### 数据集
+- 标贝中文标准女声音库（处理后）16-bit PCM WAV，22050 Hz <br> 
+LJSpeech数据集16-bit PCM WAV，22050 Hz <br>
+链接：https://pan.baidu.com/s/1RlJ7sRNjsrWeEnKOIO1MrQ <br>
+提取码：vits <br> 
+- 标贝中文标准女声音库官网： https://keithito.com/LJ-Speech-Dataset/ <br>
+LJSpeech数据集官网： https://keithito.com/LJ-Speech-Dataset/
+
+## 参考与鸣谢：
+### 大佬们的VITS语音合成GitHub仓库：
+*   https://github.com/jaywalnut310/vits
+*   https://github.com/CjangCjengh/vits
+*   https://github.com/AlexandaJerry/vits-mandarin-biaobei
+*   https://github.com/JOETtheIV/VITS-Paimon
+*   https://github.com/w4123/vits
+*   https://github.com/xiaoyou-bilibili/tts_vits 
+
+### 参考B站链接：
+*   【CV失业计划】基于VITS神经网络模型的近乎完美派蒙中文语音合成：\
+  https://www.bilibili.com/video/BV1rB4y157fd
+*   【原神】派蒙Vtuber出道计划——基于AI深度学习VITS和VSeeFace的派蒙语音合成/套皮：\
+https://www.bilibili.com/video/BV16G4y1B7Ey
+*   【深度学习】基于vits的语音合成：\
+https://www.bilibili.com/video/BV1Fe4y1r737
+*   零基础炼丹 - vits版补充：\
+https://www.bilibili.com/read/cv18357171
+
+### 恰饭
+生活不易，喵喵叹气。。。如果您喜欢该项目，请对该项目star一下表示支持吧~ <br> <img src="resources/恰饭512.png">
