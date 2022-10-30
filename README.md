@@ -60,7 +60,7 @@ See [inference.ipynb](inference.ipynb)
 <br>
 
 ## 补充说明
-### 关于在Windows平台使用eSpeak
+### 关于Windows平台eSpeak的配置
 - 在Windows用英文做训练或推断的话，需要安装[eSpeak Ng](https://github.com/espeak-ng/espeak-ng)库。[这里](https://github.com/espeak-ng/espeak-ng/releases)是下载页面，推荐使用.msi安装。
 - 安装eSpeak Ng后，请添加环境变量PHONEMIZER_ESPEAK_LIBRARY，并将变量值设置为{INSTALLDIR}\libespeak-ng.dll。如图所示：<br>
 <img src="resources/PHONEMIZER_ESPEAK_LIBRARY.png">
@@ -76,7 +76,7 @@ See [inference.ipynb](inference.ipynb)
 LJSpeech数据集16-bit PCM WAV，22050 Hz <br>
 链接：https://pan.baidu.com/s/1RlJ7sRNjsrWeEnKOIO1MrQ <br>
 提取码：vits <br> 
-- 标贝中文标准女声音库官网： https://keithito.com/LJ-Speech-Dataset/ <br>
+- 标贝中文标准女声音库官网： https://www.data-baker.com/data/index/TNtts/ <br>
 LJSpeech数据集官网： https://keithito.com/LJ-Speech-Dataset/
 
 ## 参考与鸣谢：
