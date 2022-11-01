@@ -268,10 +268,10 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
               logger.info("Saving model and optimizer state at iteration {} to {}".format(epoch, d_checkpoint_path))
               utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, d_oldest_checkpoint_path, False)
               os.rename(d_oldest_checkpoint_path, d_checkpoint_path)
-            else:
-              if num_checkpoints > num_checkpoints_to_keep:
-                os.remove(utils.oldest_checkpoint_path(hps.model_dir, "G_*.pth"))
-                os.remove(utils.oldest_checkpoint_path(hps.model_dir, "D_*.pth"))      
+          else:
+            if num_checkpoints > num_checkpoints_to_keep:
+              os.remove(utils.oldest_checkpoint_path(hps.model_dir, "G_*.pth"))
+              os.remove(utils.oldest_checkpoint_path(hps.model_dir, "D_*.pth"))      
     global_step += 1
   
   if rank == 0:
