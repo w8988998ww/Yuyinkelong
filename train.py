@@ -250,11 +250,15 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           # First save the latest checkpoint into the oldest checkpoint file.
           # Then, rename the newly saved file to latest checkpoint name.
           g_oldest_checkpoint_path = utils.oldest_checkpoint_path(hps.model_dir, "G_*.pth")
-          utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, g_oldest_checkpoint_path)
+          utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, g_oldest_checkpoint_path, False)
+          logger.info("Saving model and optimizer state at iteration {} to {}".format(
+    epoch, g_checkpoint_path))
           os.rename(g_oldest_checkpoint_path, g_checkpoint_path)
 
           d_oldest_checkpoint_path = utils.oldest_checkpoint_path(hps.model_dir, "D_*.pth")
-          utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, d_oldest_checkpoint_path)
+          logger.info("Saving model and optimizer state at iteration {} to {}".format(
+    epoch, d_checkpoint_path))
+          utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, d_oldest_checkpoint_path, False)
           os.rename(d_oldest_checkpoint_path, d_checkpoint_path)
     global_step += 1
   
