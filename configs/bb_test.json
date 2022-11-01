@@ -55,5 +55,8 @@
     "num_workers": 0
   },
   "checkpoints": {
+    "auto_delete_old_checkpoints": true,
+    "replace_old_checkpoints_mode": true,
+    "num_checkpoints_to_keep": 4
   }
 }
