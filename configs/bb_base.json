@@ -7,7 +7,7 @@
     "learning_rate": 2e-4,
     "betas": [0.8, 0.99],
     "eps": 1e-9,
-    "batch_size": 32,
+    "batch_size": 16,
     "fp16_run": true,
     "lr_decay": 0.999875,
     "segment_size": 8192,
@@ -52,6 +52,6 @@
   },
   "data_loader": {
     "use_train_sampler": true,
-    "num_workers": 8
+    "num_workers": 2
   }
 }
