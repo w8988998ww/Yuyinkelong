@@ -53,5 +53,10 @@
   "data_loader": {
     "use_train_sampler": true,
     "num_workers": 2
+  },
+  "checkpoints": {
+    "auto_delete_old_checkpoints": true,
+    "replace_old_checkpoints_mode": true,
+    "num_checkpoints_to_keep": 4
   }
 }
