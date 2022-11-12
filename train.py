@@ -255,23 +255,27 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         if should_auto_delete_old_checkpoints:
           num_checkpoints = utils.number_of_checkpoints(hps.model_dir, "G_*.pth")
           num_checkpoints_to_keep = hps.checkpoints.num_checkpoints_to_keep
+          g_oldest_checkpoint_path = utils.oldest_checkpoint_path(hps.model_dir, "G_*.pth")
+          d_oldest_checkpoint_path = utils.oldest_checkpoint_path(hps.model_dir, "D_*.pth")
           if hps.checkpoints.replace_old_checkpoints_mode:
+            # Deprecated: this method won't work on Google colab
             if num_checkpoints >= num_checkpoints_to_keep:
               # First save the latest checkpoint into the oldest checkpoint file.
               # Then, rename the newly saved file to latest checkpoint name.
-              g_oldest_checkpoint_path = utils.oldest_checkpoint_path(hps.model_dir, "G_*.pth")
               utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, g_oldest_checkpoint_path, False)
               logger.info("Saving model and optimizer state at iteration {} to {}".format(epoch, g_checkpoint_path))
               os.rename(g_oldest_checkpoint_path, g_checkpoint_path)
 
-              d_oldest_checkpoint_path = utils.oldest_checkpoint_path(hps.model_dir, "D_*.pth")
               logger.info("Saving model and optimizer state at iteration {} to {}".format(epoch, d_checkpoint_path))
               utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, d_oldest_checkpoint_path, False)
               os.rename(d_oldest_checkpoint_path, d_checkpoint_path)
           else:
             if num_checkpoints > num_checkpoints_to_keep:
-              os.remove(utils.oldest_checkpoint_path(hps.model_dir, "G_*.pth"))
-              os.remove(utils.oldest_checkpoint_path(hps.model_dir, "D_*.pth"))      
+              # https://stackoverflow.com/questions/53028607/how-to-remove-the-file-from-trash-in-drive-in-colab
+              open(g_oldest_checkpoint_path, 'w').close() # Overwrite and make the file blank
+              open(d_oldest_checkpoint_path, 'w').close()
+              os.remove(g_oldest_checkpoint_path) # Delete the blank file from google drive will move the file to bin instead
+              os.remove(d_oldest_checkpoint_path)      
     global_step += 1
   
   if rank == 0:
