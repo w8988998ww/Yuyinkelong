@@ -1,15 +1,15 @@
 import os
+import time
+
+import numpy as np
 import torch
+from scipy.io.wavfile import write
 
 import commons
 import utils
 from models import SynthesizerTrn
-from text import text_to_sequence, create_symbols_manager
+from text import create_symbols_manager, text_to_sequence
 
-import numpy as np
-from scipy.io.wavfile import write
-
-import time
 
 class AudioGenerator():
     def __init__(self, hparams, device):
