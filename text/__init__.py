@@ -1,6 +1,6 @@
 """ from https://github.com/keithito/tacotron """
 from text import cleaners
-from text.symbols import symbols_en, symbols_cmn
+from text.symbols import symbols_en, symbols_en_1, symbols_cmn, symbols_ce
 
 class SymbolsManager:
   def __init__(self, symbols):
@@ -15,6 +15,10 @@ class SymbolsManager:
 def create_symbols_manager(language):
   if language == 'cmn':
     symbols_manager = SymbolsManager(symbols_cmn)
+  elif language == 'ce':
+    symbols_manager = SymbolsManager(symbols_ce)
+  elif language == 'en':
+    symbols_manager = SymbolsManager(symbols_en_1)
   else:
     symbols_manager = SymbolsManager(symbols_en)
 
