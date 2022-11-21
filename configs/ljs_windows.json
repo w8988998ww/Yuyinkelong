@@ -52,7 +52,7 @@
   },
   "data_loader": {
     "use_train_sampler": true,
-    "num_workers": 8
+    "num_workers": 4
   },
   "checkpoints": {
     "auto_delete_old_checkpoints": true,
