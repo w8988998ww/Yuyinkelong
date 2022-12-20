@@ -71,25 +71,35 @@ See [inference.ipynb](inference.ipynb)
 
 
 ### Windows平台环境配置
-#### eSpeak的配置
-- 在Windows平台上用英文做训练或推断的话，需要安装[eSpeak Ng](https://github.com/espeak-ng/espeak-ng)库。[这里](https://github.com/espeak-ng/espeak-ng/releases)是下载页面，推荐使用.msi安装。
-- 安装eSpeak Ng后，请添加环境变量PHONEMIZER_ESPEAK_LIBRARY，并将变量值设置为{INSTALLDIR}\libespeak-ng.dll。如图所示：<br>
-<img src="resources/PHONEMIZER_ESPEAK_LIBRARY.png">
-
 #### 安装PyTorch的GPU版本
 在Windows平台，<code>pip install -r requirements.txt</code> 安装的是CPU版本的PyTorch。所以需要去[PyTorch官网](https://pytorch.org)挑选并运行合适的GPU版本PyTorch安装命令。下面命令仅供参考：
 ```
 conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
 ```
 
+#### eSpeak的配置
+- 在Windows平台上用英文做训练或推断的话，需要安装[eSpeak Ng](https://github.com/espeak-ng/espeak-ng)库。[这里](https://github.com/espeak-ng/espeak-ng/releases)是下载页面，推荐使用.msi安装。
+- 安装eSpeak Ng后，请添加环境变量PHONEMIZER_ESPEAK_LIBRARY，并将变量值设置为{INSTALLDIR}\libespeak-ng.dll。如图所示：<br>
+<img src="resources/PHONEMIZER_ESPEAK_LIBRARY.png">
+
+#### 构建Monotonoic Alignment Search扩展模块
+请先下载安装Visual Studio。到[这里](https://visualstudio.microsoft.com/#vs-section)下载。
 
 ### 数据集
 <table style="width:100%">
   <tr>
-    <td>标贝中文标准女声音库（处理后）16-bit PCM WAV，22050 Hz <br>
-    LJSpeech数据集16-bit PCM WAV，22050 Hz </td>
-    <td>链接：https://pan.baidu.com/s/1RlJ7sRNjsrWeEnKOIO1MrQ <br>
-    提取码：vits <br> </td>
+    <td>标贝中文标准女声音库（处理后）16-bit PCM WAV，22050 Hz</td>
+    <td>
+      链接：https://pan.baidu.com/s/1cvW72ECVn1dkwTaEkOEbow <br>
+      提取码：vits 
+    </td>
+  </tr>
+  <tr>
+    <td>LJSpeech数据集16-bit PCM WAV，22050 Hz</td>
+    <td>
+      链接：https://pan.baidu.com/s/1q2A38znFmxn3zCn587ZKkw <br>
+      提取码：vits
+    </td>
   </tr>
   <tr>
     <td>标贝中文标准女声音库官网</td>
@@ -101,6 +111,16 @@ conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvi
   </tr>
 </table>
 
+### 预训练权重
+<table style = "width:100%">
+  <tr>
+    <td>标贝中文标准女声音库预训练权重</td>
+    <td>
+      链接：https://pan.baidu.com/s/1pN-wL_5wB9gYMAr2Mh7Jvg <br>
+      提取码：vits
+    </td>
+  </tr>
+</table>
 
 ## 参考与鸣谢：
 ### 大佬们的VITS语音合成GitHub仓库：

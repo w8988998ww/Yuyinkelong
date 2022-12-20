@@ -28,6 +28,6 @@ symbols_en = [_pad] + list(_punctuation) + list(_letters) + list(_letters_ipa)
 
 symbols_en_1 = [_pad] + [_space] + list(_punctuation_en) + list(_letters) + list(_letters_ipa_1)
 
-symbols_cmn = [_pad] + list(_punctuation_sc) +  list(_letters) + list(_numbers) + list(_others)
+symbols_cmn = [_pad] + list(_punctuation_sc) + list(_letters) + list(_numbers) + list(_others)
 
-symbols_ce = [_pad] + list(_punctuation_sc) +  list(_letters) + list(_numbers) + list(_others) + list(_punctuation_en) + list(_letters_ipa)
+symbols_ce = [_pad] + list(_punctuation_sc) + list(_letters) + list(_numbers) + list(_others) + list(_punctuation_en) + list(_letters_ipa)
