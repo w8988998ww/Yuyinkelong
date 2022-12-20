@@ -110,6 +110,7 @@ conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvi
     <td>https://keithito.com/LJ-Speech-Dataset/</td>
   </tr>
 </table>
+<br>
 
 ### 预训练权重
 <table style = "width:100%">
@@ -121,6 +122,7 @@ conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvi
     </td>
   </tr>
 </table>
+注：各预训练权重文件包括生成网络权重（G开头），鉴别器网络权重（D开头），还有训练时使用的cleaners与symbols（方便与其他VITS仓库的代码或工具兼容）<br><br>
 
 ## 参考与鸣谢：
 ### 大佬们的VITS语音合成GitHub仓库：
