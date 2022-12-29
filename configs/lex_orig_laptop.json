@@ -3,11 +3,11 @@
     "log_interval": 200,
     "eval_interval": 1000,
     "seed": 1234,
-    "epochs": 20000,
+    "epochs": 200,
     "learning_rate": 2e-4,
     "betas": [0.8, 0.99],
     "eps": 1e-9,
-    "batch_size": 64,
+    "batch_size": 4,
     "fp16_run": true,
     "lr_decay": 0.999875,
     "segment_size": 8192,
@@ -17,9 +17,10 @@
     "c_kl": 1.0
   },
   "data": {
-    "training_files":"filelists/ljs_audio_text_train_filelist.txt.cleaned",
-    "validation_files":"filelists/ljs_audio_text_val_filelist.txt.cleaned",
-    "text_cleaners":["english_cleaners2"],
+    "training_files":"filelists/lex_orig_audio_text_train_filelist.txt.cleaned",
+    "validation_files":"filelists/lex_orig_audio_text_train_filelist.txt.cleaned",
+    "language": "cmn",
+    "text_cleaners":["chinese_cleaners"],
     "max_wav_value": 32768.0,
     "sampling_rate": 22050,
     "filter_length": 1024,
@@ -50,7 +51,13 @@
     "use_spectral_norm": false
   },
   "data_loader": {
-    "use_train_sampler": true,
-    "num_workers": 8
+    "use_train_sampler": false,
+    "num_workers": 0
+  },
+  "checkpoints": {
+    "pretrained_model_name": "bb_v100",
+    "auto_delete_old_checkpoints": true,
+    "replace_old_checkpoints_mode": false,
+    "num_checkpoints_to_keep": 3
   }
 }

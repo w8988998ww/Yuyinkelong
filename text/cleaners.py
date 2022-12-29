@@ -98,3 +98,9 @@ def english_cleaners2(text):
   phonemes = phonemize(text, language='en-us', backend='espeak', strip=True, preserve_punctuation=True, with_stress=True)
   phonemes = collapse_whitespace(phonemes)
   return phonemes
+
+def chinese_cleaners(text):
+  from pypinyin import Style, pinyin
+
+  phones = [phone[0] for phone in pinyin(text, style=Style.TONE3)]
+  return ' '.join(phones)

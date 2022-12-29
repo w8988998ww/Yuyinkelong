@@ -31,8 +31,9 @@ from losses import (
   kl_loss
 )
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
-from text.symbols import symbols
+from text import create_symbols_manager
 
+import time
 
 torch.backends.cudnn.benchmark = True
 global_step = 0
@@ -44,9 +45,10 @@ def main():
 
   n_gpus = torch.cuda.device_count()
   os.environ['MASTER_ADDR'] = 'localhost'
-  os.environ['MASTER_PORT'] = '80000'
+  os.environ['MASTER_PORT'] = '8000'
 
   hps = utils.get_hparams()
+  hps.symbols_manager = create_symbols_manager(hps.data.language)
   mp.spawn(run, nprocs=n_gpus, args=(n_gpus, hps,))
 
 
@@ -59,29 +61,40 @@ def run(rank, n_gpus, hps):
     writer = SummaryWriter(log_dir=hps.model_dir)
     writer_eval = SummaryWriter(log_dir=os.path.join(hps.model_dir, "eval"))
 
-  dist.init_process_group(backend='nccl', init_method='env://', world_size=n_gpus, rank=rank)
+  # https://github.com/ray-project/ray_lightning/issues/13
+  from sys import platform
+  if platform == "win32":
+    backend = 'gloo'
+  else:
+    backend = 'nccl'
+  dist.init_process_group(backend=backend, init_method='env://', world_size=n_gpus, rank=rank)
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
 
-  train_dataset = TextAudioLoader(hps.data.training_files, hps.data)
-  train_sampler = DistributedBucketSampler(
-      train_dataset,
-      hps.train.batch_size,
-      [32,300,400,500,600,700,800,900,1000],
-      num_replicas=n_gpus,
-      rank=rank,
-      shuffle=True)
+  train_dataset = TextAudioLoader(hps.data.training_files, hps.data, hps.symbols_manager)
   collate_fn = TextAudioCollate()
-  train_loader = DataLoader(train_dataset, num_workers=8, shuffle=False, pin_memory=True,
-      collate_fn=collate_fn, batch_sampler=train_sampler)
+  if hps.data_loader.use_train_sampler:
+    train_sampler = DistributedBucketSampler(
+        train_dataset,
+        hps.train.batch_size,
+        [32,300,400,500,600,700,800,900,1000],
+        num_replicas=n_gpus,
+        rank=rank,
+        shuffle=True)
+    train_loader = DataLoader(train_dataset, num_workers=hps.data_loader.num_workers, shuffle=False, pin_memory=True,
+        collate_fn=collate_fn, batch_sampler=train_sampler)
+  else:
+    train_loader = DataLoader(train_dataset, num_workers=hps.data_loader.num_workers, shuffle=False,
+        batch_size=hps.train.batch_size, pin_memory=True, 
+        drop_last=False, collate_fn=collate_fn)
   if rank == 0:
-    eval_dataset = TextAudioLoader(hps.data.validation_files, hps.data)
-    eval_loader = DataLoader(eval_dataset, num_workers=8, shuffle=False,
+    eval_dataset = TextAudioLoader(hps.data.validation_files, hps.data, hps.symbols_manager)
+    eval_loader = DataLoader(eval_dataset, num_workers=hps.data_loader.num_workers, shuffle=False,
         batch_size=hps.train.batch_size, pin_memory=True,
         drop_last=False, collate_fn=collate_fn)
 
   net_g = SynthesizerTrn(
-      len(symbols),
+      len(hps.symbols_manager.symbols),
       hps.data.filter_length // 2 + 1,
       hps.train.segment_size // hps.data.hop_length,
       **hps.model).cuda(rank)
@@ -100,6 +113,23 @@ def run(rank, n_gpus, hps):
   net_d = DDP(net_d, device_ids=[rank])
 
   try:
+    utils.load_checkpoint(utils.latest_checkpoint_path(
+      "pretrained_models", 
+      f"G_{hps.checkpoints.pretrained_model_name}*.pth"
+      ), 
+      net_g, 
+      optim_g
+    )
+    utils.load_checkpoint(utils.latest_checkpoint_path(
+      "pretrained_models", f"D_{hps.checkpoints.pretrained_model_name}*.pth"
+      ), 
+      net_d, 
+      optim_d
+    )
+  except:
+    print("No pretrained models to load")
+
+  try:
     _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g)
     _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "D_*.pth"), net_d, optim_d)
     global_step = (epoch_str - 1) * len(train_loader)
@@ -113,10 +143,12 @@ def run(rank, n_gpus, hps):
   scaler = GradScaler(enabled=hps.train.fp16_run)
 
   for epoch in range(epoch_str, hps.train.epochs + 1):
+    start = time.perf_counter()
     if rank==0:
       train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
     else:
       train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, None], None, None)
+    print(f"This epoch takes {time.perf_counter() - start} seconds")
     scheduler_g.step()
     scheduler_d.step()
 
@@ -129,7 +161,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
   if writers is not None:
     writer, writer_eval = writers
 
-  train_loader.batch_sampler.set_epoch(epoch)
+  if hps.data_loader.use_train_sampler:
+    train_loader.batch_sampler.set_epoch(epoch)
   global global_step
 
   net_g.train()
@@ -222,8 +255,44 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
       if global_step % hps.train.eval_interval == 0:
         evaluate(hps, net_g, eval_loader, writer_eval)
-        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
-        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
+
+        should_auto_delete_old_checkpoints = False
+        if hasattr(hps, 'checkpoints'):
+          if hps.checkpoints.auto_delete_old_checkpoints:
+            should_auto_delete_old_checkpoints = True
+        else:
+          logger.info(("The 'checkpoints' config option hasn't been specified!"))
+
+        g_checkpoint_path = os.path.join(hps.model_dir, "G_{}_{}.pth".format(hps.model_name, global_step))
+        d_checkpoint_path = os.path.join(hps.model_dir, "D_{}_{}.pth".format(hps.model_name, global_step))
+        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, g_checkpoint_path)
+        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, d_checkpoint_path)
+
+        # Only keep a number of latest checkpoints to save disc space
+        if should_auto_delete_old_checkpoints:
+          num_checkpoints = utils.number_of_checkpoints(hps.model_dir, "G_*.pth")
+          num_checkpoints_to_keep = hps.checkpoints.num_checkpoints_to_keep
+          g_oldest_checkpoint_path = utils.oldest_checkpoint_path(hps.model_dir, "G_*.pth")
+          d_oldest_checkpoint_path = utils.oldest_checkpoint_path(hps.model_dir, "D_*.pth")
+          if hps.checkpoints.replace_old_checkpoints_mode:
+            # Deprecated: this method won't work on Google colab
+            if num_checkpoints >= num_checkpoints_to_keep:
+              # First save the latest checkpoint into the oldest checkpoint file.
+              # Then, rename the newly saved file to latest checkpoint name.
+              utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, g_oldest_checkpoint_path, False)
+              logger.info("Saving model and optimizer state at iteration {} to {}".format(epoch, g_checkpoint_path))
+              os.rename(g_oldest_checkpoint_path, g_checkpoint_path)
+
+              logger.info("Saving model and optimizer state at iteration {} to {}".format(epoch, d_checkpoint_path))
+              utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, d_oldest_checkpoint_path, False)
+              os.rename(d_oldest_checkpoint_path, d_checkpoint_path)
+          else:
+            if num_checkpoints > num_checkpoints_to_keep:
+              # https://stackoverflow.com/questions/53028607/how-to-remove-the-file-from-trash-in-drive-in-colab
+              open(g_oldest_checkpoint_path, 'w').close() # Overwrite and make the file blank
+              open(d_oldest_checkpoint_path, 'w').close()
+              os.remove(g_oldest_checkpoint_path) # Delete the blank file from google drive will move the file to bin instead
+              os.remove(d_oldest_checkpoint_path)      
     global_step += 1
   
   if rank == 0:

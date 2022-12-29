@@ -43,8 +43,9 @@ def load_checkpoint(checkpoint_path, model, optimizer=None):
   return model, optimizer, learning_rate, iteration
 
 
-def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path):
-  logger.info("Saving model and optimizer state at iteration {} to {}".format(
+def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path, enable_logs=True):
+  if enable_logs:
+    logger.info("Saving model and optimizer state at iteration {} to {}".format(
     iteration, checkpoint_path))
   if hasattr(model, 'module'):
     state_dict = model.module.state_dict()
@@ -73,6 +74,19 @@ def latest_checkpoint_path(dir_path, regex="G_*.pth"):
   x = f_list[-1]
   print(x)
   return x
+
+
+def oldest_checkpoint_path(dir_path, regex="G_*.pth"):
+  f_list = glob.glob(os.path.join(dir_path, regex))
+  f_list.sort(key=lambda f: int("".join(filter(str.isdigit, f))))
+  x = f_list[0]
+  print(x)
+  return x
+
+
+def number_of_checkpoints(dir_path, regex="G_*.pth"):
+  f_list = glob.glob(os.path.join(dir_path, regex))
+  return len(f_list)
 
 
 def plot_spectrogram_to_numpy(spectrogram):
@@ -147,9 +161,11 @@ def get_hparams(init=True):
                       help='JSON file for configuration')
   parser.add_argument('-m', '--model', type=str, required=True,
                       help='Model name')
+  parser.add_argument('-d', '--dir', type=str, default="./logs",
+                      help='Directory for output')
   
   args = parser.parse_args()
-  model_dir = os.path.join("./logs", args.model)
+  model_dir = os.path.join(args.dir, args.model)
 
   if not os.path.exists(model_dir):
     os.makedirs(model_dir)
@@ -168,6 +184,7 @@ def get_hparams(init=True):
   
   hparams = HParams(**config)
   hparams.model_dir = model_dir
+  hparams.model_name = args.model
   return hparams
 
 
